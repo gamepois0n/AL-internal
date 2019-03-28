@@ -139,9 +139,8 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 					int width = height / 2;
 					if(b_box)
 						render_rect(ImVec2((pos.x - width / 2), top.y), ImVec2((pos.x - width / 2) + width, top.y + height), ImVec4(c_box[0], c_box[1], c_box[2], c_box[3]), 5, 0, 3);
-					if (b_health) {
+					if (b_health)
 						render_rect(ImVec2((pos.x - width / 2) - 4, top.y), ImVec2((pos.x - width / 2) - 4, top.y + e->m_iHealth() * height / e->m_iMaxHealth()), ImVec4(0 / 255.f, 255 / 255.f, 47 / 255.f, 1), 1, 0, 3);
-					}
 				}
 			}
 		}
