@@ -10,7 +10,15 @@ std::once_flag wndproc;
 bool b_showmenu = false;
 bool b_box = false;
 bool b_chams = false;
+bool b_health = false;
+bool b_aimbotenable = false;
+bool b_espenable = false;
+bool b_miscenable = false;
 
+
+float c_glow[4] = {};
+float c_box[4] = {};
+float c_name[4] = {};
 
 inline bool w2s(c_vec source, c_vec &destination) {
 	return o_worldtoscreen(source, destination);
@@ -32,7 +40,7 @@ inline c_entity* get_localentity()
 		c_entity* ent = get_player(i);
 		if (!ent) continue;
 
-		if (!strcmp(ent->m_hHandle(), xorstr_("player"))) {
+		/*if (!strcmp(ent->m_hHandle(), xorstr_("player")))*/ {
 			if (ent->m_iId() == local_entity_id) {
 				return ent;
 			}
@@ -47,10 +55,16 @@ inline bool friendly(c_entity* e) {
 	return false;
 }
 
-void render_rect(const ImVec2& from, const ImVec2& to, float rounding, uint32_t roundingCornersFlags, float thickness)
+void render_rect(const ImVec2& from, const ImVec2& to, const ImVec4& color, float rounding, uint32_t roundingCornersFlags, float thickness)
 {
 	ImGuiWindow* window = ImGui::GetCurrentWindow();
-	window->DrawList->AddRect(from, to, ImGui::GetColorU32({ 10 / 255.0f, 60 / 255.0f, 50 / 255.0f, 1.f }), rounding, roundingCornersFlags, thickness);
+	window->DrawList->AddRect(from, to, ImGui::GetColorU32({ color.x, color.y, color.z, color.w }), rounding, roundingCornersFlags, thickness);
+}
+
+void render_text(const ImVec2& from, const char* text)
+{
+	ImGuiWindow* window = ImGui::GetCurrentWindow();
+	window->DrawList->AddText(from, ImGui::GetColorU32({ 1.f, 0, 0, 1.f }), text);
 }
 
 LRESULT APIENTRY hk_wndproc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -88,13 +102,17 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 
 		ImGui_ImplDX11_Init(iat(FindWindowA).get()(0, xorstr_("Apex Legends")), g_pdevice, g_pcontext);
 		ImGui_ImplDX11_CreateDeviceObjects();
+		ImGuiIO io = ImGui::GetIO();
+		ImFontConfig cfg;
+		io.Fonts->AddFontFromFileTTF("C:/windows/fonts/smallest_pixel-7.ttf", 10.f, &cfg, io.Fonts->GetGlyphRangesCyrillic());
+		io.Fonts->AddFontDefault();
 	});
 
 
 	g_pcontext->OMSetRenderTargets(1, &g_prendertargetview, NULL);
 
 
-	ImGuiIO& io = ImGui::GetIO();
+	ImGuiIO io = ImGui::GetIO();
 	ImGui_ImplDX11_NewFrame();
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
@@ -103,24 +121,28 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 
 	ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
 	ImGui::SetWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y), ImGuiCond_Always);
-	for (int i = 0; i < get_entcount(); i++) {
-		auto e = get_player(i);
-		if (e && e->m_iHealth() > 0) {
-			if(b_chams)
-				e->hl_make_glow();
-			
-			if (b_box) {
-				c_vec pos, pos3D, top, top3D;
-				pos3D = e->m_vPos();
-				top3D = pos3D + c_vec(0, 0, 64);
 
-				if (w2s(pos3D, pos) && w2s(top3D, top))
+	if (b_espenable) {
+		for (int i = 0; i < get_entcount(); i++) {
+			auto e = get_player(i);
+			if (e && e->m_iHealth() > 0) {
+				if (b_chams)
+					e->hl_make_glow();
+
+				c_vec pos, pos3d, top, top3d;
+				pos3d = e->m_vPos();
+				top3d = pos3d + c_vec(0, 0, 64);
+
+				if (w2s(pos3d, pos) && w2s(top3d, top) )
 				{
 					int height = (pos.y - top.y);
 					int width = height / 2;
-					render_rect(ImVec2((pos.x - width / 2), top.y), ImVec2((pos.x - width / 2) + width, top.y + height), 5, 0, 3);
+					if(b_box)
+						render_rect(ImVec2((pos.x - width / 2), top.y), ImVec2((pos.x - width / 2) + width, top.y + height), ImVec4(c_box[0], c_box[1], c_box[2], c_box[3]), 5, 0, 3);
+					if (b_health) {
+						render_rect(ImVec2((pos.x - width / 2) - 4, top.y), ImVec2((pos.x - width / 2) - 4, top.y + e->m_iHealth() * height / e->m_iMaxHealth()), ImVec4(0 / 255.f, 255 / 255.f, 47 / 255.f, 1), 1, 0, 3);
+					}
 				}
-				
 			}
 		}
 	}
@@ -131,14 +153,41 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 	ImGui::End();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleVar(2);
-
 	if (b_showmenu) {
+		ImGui::PushFont(io.Fonts->Fonts[0]);
+		static short tab = 0;
+		if (ImGui::Begin(xorstr_("apexlegends internal"), 0, ImVec2(260, 400), -1.f, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize | ImGuiWindowFlags_::ImGuiWindowFlags_NoTitleBar)) {
+			ImGui::BeginChild(xorstr_("##tabs"), ImVec2(80, 100), true, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize); {
+				if (ImGui::Button(xorstr_("aimbot"), ImVec2(50, 20)))
+					tab = 0;
+				if (ImGui::Button(xorstr_("esp"), ImVec2(50, 20)))
+					tab = 1;
+				if (ImGui::Button(xorstr_("misc"), ImVec2(50, 20)))
+					tab = 2;
 
-		if (ImGui::Begin(xorstr_("apexlegends internal"), 0, ImVec2(200, 200))) {
-			ImGui::Checkbox(xorstr_("glow chams"), &b_chams);
-			ImGui::Checkbox(xorstr_("box"), &b_box);
+
+				ImGui::EndChild();
+			}
+			ImGui::SameLine();
+			ImGui::BeginChild(xorstr_("##main"), ImVec2(0, 0), true, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize); {
+
+				if (tab == 0) {
+					ImGui::Checkbox(xorstr_("enable"), &b_aimbotenable);
+				}
+				else if (tab == 1) {
+					ImGui::Checkbox(xorstr_("enable"), &b_espenable);
+					ImGui::Checkbox(xorstr_("glow"), &b_chams); ImGui::SameLine(); ImGui::ColorEdit4("glow", c_glow, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
+					ImGui::Checkbox(xorstr_("box"), &b_box); ImGui::SameLine(); ImGui::ColorEdit4("box", c_box, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
+					ImGui::Checkbox(xorstr_("health bar"), &b_health); 
+				}
+				else if (tab == 2) {
+					ImGui::Checkbox(xorstr_("enable"), &b_miscenable);
+				}
+				ImGui::EndChild();
+			}
 			ImGui::End();
 		}
+		ImGui::PopFont();
 	}
 	ImGui::Render();
 	return o_present(p_swapchain, syncintreval, flags);
@@ -150,14 +199,15 @@ void __stdcall _thr() {
 	AllocConsole();
 	freopen(xorstr_("con"), xorstr_("w"), stdout);
 
-	std::cout << xorstr_("use at ownd risk") << std::endl;
+	std::cout << xorstr_("use at own risk") << std::endl;
 
 	while (!dwbase || !dwdiscord) {
-		dwbase = (uintptr_t)iat(GetModuleHandleA).get()(xorstr_("r5apex.exe"));
+		dwbase = (uintptr_t)iat(GetModuleHandleA).get()(xorstr_("EasyAntiCheat_launcher.exe"));
 		dwdiscord = (uintptr_t)iat(GetModuleHandleA).get()(xorstr_("DiscordHook64.dll"));
+		
 	}
 
-	std::cout << xorstr_("r5apex.exe ") << std::hex << dwdiscord << std::endl;
+	std::cout << xorstr_("r5apex.exe ") << std::hex << dwbase << std::endl;
 	std::cout << xorstr_("discordhook64.dll ") << std::hex << dwdiscord << std::endl;
 	
 	std::cout << xorstr_("loading discord hook methods") << std::endl;
@@ -175,9 +225,9 @@ void __stdcall _thr() {
 	
 	std::cout << xorstr_("loading game classes") << std::endl;
 	
-	g_pinput = (c_input*)memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 8D 0D ? ? ? ? 41 FF 90 ? ? ? ? EB E9")), 3);
-	g_pglobals = (c_globalvars*)memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 8B 05 ? ? ? ? F3 0F 10 50 ? 74 38")), 4);
-	createinterface = (createinterface_fn)memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("E8 ? ? ? ? 48 89 05 ? ? ? ? 48 83 3D ? ? ? ? ? 0F 84 ? ? ? ? 33 D2")), 1);
+	g_pinput = (c_input*)memory::dereference(memory::occurence(xorstr_("EasyAntiCheat_launcher.exe"), xorstr_("48 8D 0D ? ? ? ? 41 FF 90 ? ? ? ? EB E9")), 3);
+	g_pglobals = (c_globalvars*)memory::dereference(memory::occurence(xorstr_("EasyAntiCheat_launcher.exe"), xorstr_("48 8B 05 ? ? ? ? F3 0F 10 50 ? 74 38")), 4);
+	createinterface = (createinterface_fn)memory::dereference(memory::occurence(xorstr_("EasyAntiCheat_launcher.exe"), xorstr_("E8 ? ? ? ? 48 89 05 ? ? ? ? 48 83 3D ? ? ? ? ? 0F 84 ? ? ? ? 33 D2")), 1);
 	o_worldtoscreen = (worldtoscreen_fn)(dwbase + 0x642B10);
 
 	std::cout << xorstr_("g_pinput ") << std::hex << g_pinput << std::endl;

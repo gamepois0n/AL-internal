@@ -16,15 +16,19 @@
 #pragma comment (lib, "d3dx11.lib")
 #pragma comment (lib, "d3dx10.lib")
 
+#include "gui/imgui.h"
+#include "gui/imgui_internal.h"
+#include "gui/imgui_impl_dx11.h"
+
 uintptr_t dwbase = 0;
 uintptr_t dwdiscord = 0;
+extern float c_glow[4];
+extern float c_box[4];
+extern float c_name[4];
 
 #include "xorstr.h"
 #include "lazyimporter.h"
 #include "memory.h"
-#include "gui/imgui.h"
-#include "gui/imgui_internal.h"
-#include "gui/imgui_impl_dx11.h"
 #include "sdk/vector3d.h"
 #include "sdk/c_globalvars.h"
 #include "sdk/c_entity.h"
@@ -202,3 +206,5 @@ enum Hitgroup
 	RIGHTLEG = 7,
 	GEAR = 10
 };
+
+

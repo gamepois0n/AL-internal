@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.28307.421
+VisualStudioVersion = 15.0.28307.489
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apexinternal", "apexinternal\apexinternal.vcxproj", "{E5BA3482-8AD3-4589-B8BE-DC9AFFBFE17E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "apexinternal", "apexinternal.vcxproj", "{E5BA3482-8AD3-4589-B8BE-DC9AFFBFE17E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +26,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {C0503A60-C8A0-4246-A96B-4852B584ABAB}
+		SolutionGuid = {A2AD920C-481A-47B4-8318-F7542A58BAED}
 	EndGlobalSection
 EndGlobal

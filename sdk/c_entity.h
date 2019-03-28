@@ -21,7 +21,10 @@ public:
 	inline int m_iHealth() {
 		return *(int*)((uintptr_t)this + 0x3D4);
 	}
-
+	inline int m_iMaxHealth() {
+		return *(int*)((uintptr_t)this + 0x4FC);
+	}
+	
 	inline int m_iShield() {
 		return *(int*)((uintptr_t)this + 0x150);
 	}
@@ -45,18 +48,17 @@ public:
 		for (int offset = 688; offset <= 712; offset += 4)
 			*(float*)(this + offset) = FLT_MAX;
 
-		*(c_vec*)((uintptr_t)this + 0x1B0) = c_vec(11,250,255);
-		*(float*)((uintptr_t)this + 0x1C0) = 35;
+		*(c_vec*)((uintptr_t)this + 0x1B0) = c_vec(c_glow[0], c_glow[1], c_glow[2]);
+		*(float*)((uintptr_t)this + 0x1C0) = c_glow[3] * 2.5f;
 	}
 
-	inline char* m_sName() {
-		typedef char*(__fastcall *t_get_entity_name)(uintptr_t entity_pointer);
-		static t_get_entity_name fn_get_entity_name = (t_get_entity_name)(dwbase + 0x6E72B0);
-		return fn_get_entity_name((uintptr_t)this);
+	inline const char* m_sName(int i) {
+		return 0;
 	}
 
 	inline char* m_hHandle() {
-		return *(char**)((uintptr_t)this + 0x500);
+		auto h =  *(char**)((uintptr_t)this + 0x500);
+		return h;
 	}
 
 	inline c_vec m_vPos() {
