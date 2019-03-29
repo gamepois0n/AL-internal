@@ -18,26 +18,26 @@ public:
 class c_entity
 {
 public:
-	inline int m_iHealth() {
+	inline int m_ihealth() {
 		return *(int*)((uintptr_t)this + 0x3D4);
 	}
-	inline int m_iMaxHealth() {
+	inline int m_imaxhealth() {
 		return *(int*)((uintptr_t)this + 0x4FC);
 	}
 	
-	inline int m_iShield() {
+	inline int m_ishield() {
 		return *(int*)((uintptr_t)this + 0x150);
 	}
 
-	inline int m_iLifeState() {
+	inline int m_ilifestate() {
 		return *(int*)((uintptr_t)this + 0x718);
 	}
 
-	inline int m_iId() {
+	inline int m_iindex() {
 		return *(int*)((uintptr_t)this + 0x8);
 	}
 
-	inline int m_iTeam() {
+	inline int m_iteam() {
 		return *(int*)((uintptr_t)this + 0x3E4);
 	}
 
@@ -52,27 +52,15 @@ public:
 		*(float*)((uintptr_t)this + 0x1C0) = c_glow[3] * 2.5f;
 	}
 
-	inline const char* m_sName(int i) {
-		return 0;
+	inline const char* m_sname() {
+		return o_getname((uintptr_t)this);
 	}
 
-	inline char* m_hHandle() {
-		auto h =  *(char**)((uintptr_t)this + 0x500);
-		return h;
+	inline char* m_shandle() {
+		return *(char**)((uintptr_t)this + 0x500);;
 	}
 
-	inline c_vec m_vPos() {
+	inline c_vec m_vorigin() {
 		return *(c_vec*)((uintptr_t)this + 0x12C);
-	}
-	inline c_vec m_vAngles() {
-		return *(c_vec*)((uintptr_t)this + 0x20BC);
-	}
-
-	inline c_weapon* m_ActiveWeapon() {
-		return *(c_weapon**)((((uintptr_t)this + 0x1634) & 0xFFFF) << 5);
-	}
-
-	inline c_vec m_vEyes() {
-		return *(c_vec*)((uintptr_t)this + 0x3AA0);
 	}
 };

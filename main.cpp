@@ -8,12 +8,18 @@ WNDPROC o_wndproc = nullptr;
 std::once_flag present;
 std::once_flag wndproc;
 bool b_showmenu = false;
+
+bool b_espenable = false;
 bool b_box = false;
 bool b_chams = false;
 bool b_health = false;
+bool b_name = false;
+
 bool b_aimbotenable = false;
-bool b_espenable = false;
+
 bool b_miscenable = false;
+bool b_speedhack = false;
+int i_speedhack = 0;
 
 
 float c_glow[4] = {};
@@ -25,24 +31,35 @@ inline bool w2s(c_vec source, c_vec &destination) {
 }
 
 inline int get_entcount() {
-	return *(int*)(dwbase + 0xC006788);
+	return *reinterpret_cast<int*>(dwbase + 0xC006788);
 }
 
 inline c_entity* get_player(uintptr_t idx) {
-	return *(c_entity**)(dwbase + 0x1F96D88 + (idx << 5));
+	auto e = *reinterpret_cast<c_entity**>(dwbase + 0x1F96D88 + (idx << 5));
+	if (e) {
+		auto h = e->m_shandle();
+		if (h && *h) {
+			if (!strcmp(h, xorstr_("player"))) {
+				return e;
+			}
+		}
+	}
+	return nullptr;
 }
 
 inline c_entity* get_localentity()
 {
-	uintptr_t local_entity_id = *(uintptr_t*)(dwbase + 0x1747EFC);
+	uintptr_t local_entity_id = *reinterpret_cast<uintptr_t*>(dwbase + 0x1747EFC);
 	for (int i = 0; i < get_entcount(); i++)
 	{
 		c_entity* ent = get_player(i);
 		if (!ent) continue;
-
-		/*if (!strcmp(ent->m_hHandle(), xorstr_("player")))*/ {
-			if (ent->m_iId() == local_entity_id) {
-				return ent;
+		auto h = ent->m_shandle();
+		if (h && *h) {
+			if (!strcmp(h, xorstr_("player"))) {
+				if (ent->m_iindex() == local_entity_id) {
+					return ent;
+				}
 			}
 		}
 	}
@@ -50,21 +67,21 @@ inline c_entity* get_localentity()
 }
 
 inline bool friendly(c_entity* e) {
-	if (e->m_iTeam() == get_localentity()->m_iTeam())
+	if (e->m_iteam() == get_localentity()->m_iteam())
 		return true;
 	return false;
 }
 
-void render_rect(const ImVec2& from, const ImVec2& to, const ImVec4& color, float rounding, uint32_t roundingCornersFlags, float thickness)
+inline void render_rect(const ImVec2& from, const ImVec2& to, const ImVec4& color, float rounding, uint32_t roundingCornersFlags, float thickness)
 {
 	ImGuiWindow* window = ImGui::GetCurrentWindow();
-	window->DrawList->AddRect(from, to, ImGui::GetColorU32({ color.x, color.y, color.z, color.w }), rounding, roundingCornersFlags, thickness);
+	window->DrawList->AddRect(from, to, ImGui::GetColorU32(color), rounding, roundingCornersFlags, thickness);
 }
 
-void render_text(const ImVec2& from, const char* text)
+inline void render_text(const ImVec2& from, const char* text, const ImVec4& color)
 {
 	ImGuiWindow* window = ImGui::GetCurrentWindow();
-	window->DrawList->AddText(from, ImGui::GetColorU32({ 1.f, 0, 0, 1.f }), text);
+	window->DrawList->AddText(from, ImGui::GetColorU32(color), text);
 }
 
 LRESULT APIENTRY hk_wndproc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -104,7 +121,7 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 		ImGui_ImplDX11_CreateDeviceObjects();
 		ImGuiIO io = ImGui::GetIO();
 		ImFontConfig cfg;
-		io.Fonts->AddFontFromFileTTF("C:/windows/fonts/smallest_pixel-7.ttf", 10.f, &cfg, io.Fonts->GetGlyphRangesCyrillic());
+		io.Fonts->AddFontFromFileTTF(xorstr_("C:/windows/fonts/smallest_pixel-7.ttf"), 10.f, &cfg, io.Fonts->GetGlyphRangesCyrillic());
 		io.Fonts->AddFontDefault();
 	});
 
@@ -125,12 +142,13 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 	if (b_espenable) {
 		for (int i = 0; i < get_entcount(); i++) {
 			auto e = get_player(i);
-			if (e && e->m_iHealth() > 0) {
+
+			if (e && e->m_ihealth() > 0) {
 				if (b_chams)
 					e->hl_make_glow();
 
 				c_vec pos, pos3d, top, top3d;
-				pos3d = e->m_vPos();
+				pos3d = e->m_vorigin();
 				top3d = pos3d + c_vec(0, 0, 64);
 
 				if (w2s(pos3d, pos) && w2s(top3d, top) )
@@ -139,12 +157,20 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 					int width = height / 2;
 					if(b_box)
 						render_rect(ImVec2((pos.x - width / 2), top.y), ImVec2((pos.x - width / 2) + width, top.y + height), ImVec4(c_box[0], c_box[1], c_box[2], c_box[3]), 5, 0, 3);
-					if (b_health) {
-						render_rect(ImVec2((pos.x - width / 2) - 4, top.y), ImVec2((pos.x - width / 2) - 4, top.y + e->m_iHealth() * height / e->m_iMaxHealth()), ImVec4(0 / 255.f, 255 / 255.f, 47 / 255.f, 1), 1, 0, 3);
-					}
+					if (b_health)
+						render_rect(ImVec2((pos.x - width / 2) - 4, top.y), ImVec2((pos.x - width / 2) - 4, top.y + e->m_ihealth() * height / e->m_imaxhealth()), ImVec4(0 / 255.f, 255 / 255.f, 47 / 255.f, 1), 1, 0, 3);
+					if (b_name)
+						render_text(ImVec2((pos.x - width / 2), top.y - 15), e->m_sname(), ImVec4(c_name[0], c_name[1], c_name[2], c_name[3]));
 				}
 			}
 		}
+	}
+
+	if (b_miscenable) {
+		if (o_getasynckeystate(i_speedhack) && b_speedhack)
+			*reinterpret_cast<float*>(dwbase + 0x18DAB10) = 5.f;
+		else
+			*reinterpret_cast<float*>(dwbase + 0x18DAB10) = 1.f;
 	}
 	
 	ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -154,8 +180,9 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 	ImGui::PopStyleColor();
 	ImGui::PopStyleVar(2);
 	if (b_showmenu) {
-		ImGui::PushFont(io.Fonts->Fonts[0]);
 		static short tab = 0;
+
+		ImGui::PushFont(io.Fonts->Fonts[0]);
 		if (ImGui::Begin(xorstr_("apexlegends internal"), 0, ImVec2(260, 400), -1.f, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize | ImGuiWindowFlags_::ImGuiWindowFlags_NoTitleBar)) {
 			ImGui::BeginChild(xorstr_("##tabs"), ImVec2(80, 100), true, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize); {
 				if (ImGui::Button(xorstr_("aimbot"), ImVec2(50, 20)))
@@ -179,9 +206,11 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 					ImGui::Checkbox(xorstr_("glow"), &b_chams); ImGui::SameLine(); ImGui::ColorEdit4("glow", c_glow, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
 					ImGui::Checkbox(xorstr_("box"), &b_box); ImGui::SameLine(); ImGui::ColorEdit4("box", c_box, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
 					ImGui::Checkbox(xorstr_("health bar"), &b_health); 
+					ImGui::Checkbox(xorstr_("name"), &b_name); ImGui::SameLine(); ImGui::ColorEdit4("name", c_name, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoOptions);
 				}
 				else if (tab == 2) {
 					ImGui::Checkbox(xorstr_("enable"), &b_miscenable);
+					ImGui::Checkbox(xorstr_("speedhack"), &b_speedhack); ImGui::SameLine(); ImGui::HotKey("##speedhack", &i_speedhack, ImVec2(50, 20));
 				}
 				ImGui::EndChild();
 			}
@@ -193,18 +222,17 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 	return o_present(p_swapchain, syncintreval, flags);
 }
 
+//EasyAntiCheat_launcher.exe - when running without eac
 
-
-void __stdcall _thr() {
+void __stdcall _thread() {
 	AllocConsole();
 	freopen(xorstr_("con"), xorstr_("w"), stdout);
 
 	std::cout << xorstr_("use at own risk") << std::endl;
 
 	while (!dwbase || !dwdiscord) {
-		dwbase = (uintptr_t)iat(GetModuleHandleA).get()(xorstr_("EasyAntiCheat_launcher.exe"));
-		dwdiscord = (uintptr_t)iat(GetModuleHandleA).get()(xorstr_("DiscordHook64.dll"));
-		
+		dwbase = reinterpret_cast<uintptr_t>(iat(GetModuleHandleA).get()(xorstr_("r5apex.exe")));
+		dwdiscord = reinterpret_cast<uintptr_t>(iat(GetModuleHandleA).get()(xorstr_("DiscordHook64.dll")));
 	}
 
 	std::cout << xorstr_("r5apex.exe ") << std::hex << dwbase << std::endl;
@@ -212,39 +240,42 @@ void __stdcall _thr() {
 	
 	std::cout << xorstr_("loading discord hook methods") << std::endl;
 	uintptr_t dwpresent = memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 8B F2 48 8B D9 48 8B D1"));
-	o_getasynckeystate = (getasynckeystate_fn)memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("40 53 48 83 EC 20 8B D9 FF 15 ? ? ? ?"));
-	CreateHook = (createhook_fn)(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("40 53 55 56 57 41 54 41 56 41 57 48 83 EC 60")));
-	EnableHook = (enablehook_fn)(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 20 33 F6 8B FA")));
-	EnableHookQue = (applyqueued_fn)(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 57")));
+	o_getasynckeystate = reinterpret_cast<getasynckeystate_fn>(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("40 53 48 83 EC 20 8B D9 FF 15 ? ? ? ?")));
+	CreateHook = reinterpret_cast<createhook_fn>(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("40 53 55 56 57 41 54 41 56 41 57 48 83 EC 60")));
+	EnableHook = reinterpret_cast<enablehook_fn>(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 20 33 F6 8B FA")));
+	EnableHookQue = reinterpret_cast<applyqueued_fn>(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 57")));
 
 	std::cout << xorstr_("directx 11 present ") << std::hex << dwpresent << std::endl;
 	std::cout << xorstr_("getaynckeystate ") << std::hex << o_getasynckeystate << std::endl;
 	std::cout << xorstr_("create hook ") << std::hex << CreateHook << std::endl;
-	std::cout << xorstr_("push hook") << std::hex << EnableHook << std::endl;
-	std::cout << xorstr_("enable hook") << std::hex << EnableHookQue << std::endl;
+	std::cout << xorstr_("push hook ") << std::hex << EnableHook << std::endl;
+	std::cout << xorstr_("enable hook ") << std::hex << EnableHookQue << std::endl;
 	
 	std::cout << xorstr_("loading game classes") << std::endl;
 	
-	g_pinput = (c_input*)memory::dereference(memory::occurence(xorstr_("EasyAntiCheat_launcher.exe"), xorstr_("48 8D 0D ? ? ? ? 41 FF 90 ? ? ? ? EB E9")), 3);
-	g_pglobals = (c_globalvars*)memory::dereference(memory::occurence(xorstr_("EasyAntiCheat_launcher.exe"), xorstr_("48 8B 05 ? ? ? ? F3 0F 10 50 ? 74 38")), 4);
-	createinterface = (createinterface_fn)memory::dereference(memory::occurence(xorstr_("EasyAntiCheat_launcher.exe"), xorstr_("E8 ? ? ? ? 48 89 05 ? ? ? ? 48 83 3D ? ? ? ? ? 0F 84 ? ? ? ? 33 D2")), 1);
-	o_worldtoscreen = (worldtoscreen_fn)(dwbase + 0x642B10);
+	g_pinput = reinterpret_cast<c_input*>(memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 8D 0D ? ? ? ? 41 FF 90 ? ? ? ? EB E9")), 3));
+	g_pglobals = reinterpret_cast<c_globalvars*>(memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 8B 05 ? ? ? ? F3 0F 10 50 ? 74 38")), 4));
+	createinterface = reinterpret_cast<createinterface_fn>(memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("E8 ? ? ? ? 48 89 05 ? ? ? ? 48 83 3D ? ? ? ? ? 0F 84 ? ? ? ? 33 D2")), 1));
+	o_getname = reinterpret_cast<getname_fn>(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 83 3D 78 05 AC 0B 00 74 08 8B 51 30 E9 7E F0")));
+	o_worldtoscreen = reinterpret_cast<worldtoscreen_fn>(memory::occurence(xorstr_("r5apex.exe"), xorstr_("4C 8B DC 53 56 57 48 83 EC 70 8B 41 08 4D 8D 4B 18 F2 0F 10 01 4D 8D 43 BC 89 44 24 58 48 8B DA 49 8D 43 B8")));
+	
 
 	std::cout << xorstr_("g_pinput ") << std::hex << g_pinput << std::endl;
 	std::cout << xorstr_("g_pglobals ") << std::hex << g_pglobals << std::endl;
 	std::cout << xorstr_("createinterface ") << std::hex << createinterface << std::endl;
 	std::cout << xorstr_("o_worldtoscreen ") << std::hex << o_worldtoscreen << std::endl;
+	std::cout << xorstr_("o_getname ") << std::hex << o_getname << std::endl;
 
 	std::cout << xorstr_("enable hooks") << std::endl;
 
-	CreateHook((void*)dwpresent, (void*)hk_present, (void**)&o_present);
-	EnableHook((void*)dwpresent, 1);
+	CreateHook(reinterpret_cast<void*>(dwpresent), reinterpret_cast<void*>(hk_present), reinterpret_cast<void**>(&o_present));
+	EnableHook(reinterpret_cast<void*>(dwpresent), 1);
 	EnableHookQue();
 }
 
 bool __stdcall DllMain(void* module, unsigned long reason, void* buffer) {//inject with hack thread option
 	if (reason == 1) {
-		_thr();
+		_thread();
 	}
 	return true;
 }

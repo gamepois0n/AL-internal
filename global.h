@@ -30,12 +30,6 @@ extern float c_name[4];
 #include "lazyimporter.h"
 #include "memory.h"
 #include "sdk/vector3d.h"
-#include "sdk/c_globalvars.h"
-#include "sdk/c_entity.h"
-#include "sdk/matrix.h"
-#include "sdk/c_input.h"
-
-
 
 typedef int(__stdcall* createhook_fn)(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal);
 createhook_fn CreateHook = nullptr;
@@ -49,7 +43,7 @@ applyqueued_fn EnableHookQue = nullptr;
 typedef long(__stdcall *present_fn) (IDXGISwapChain* p_swapchain, UINT syncintreval, UINT flags);
 present_fn o_present = nullptr;
 
-typedef bool(__fastcall* createmove_fn)(void* cInputPtr, int sequence_number, float input_sample_frametime, bool active);
+typedef bool(__fastcall* createmove_fn)(void* cinput, int sequence_number, float input_sample_frametime, bool active);
 createmove_fn o_createmove = nullptr;
 
 typedef uintptr_t(__fastcall* createinterface_fn)(const char *, uintptr_t);
@@ -61,13 +55,22 @@ getasynckeystate_fn o_getasynckeystate;
 typedef bool(__fastcall* worldtoscreen_fn)(c_vec& origin, c_vec& screen);
 worldtoscreen_fn o_worldtoscreen;
 
+typedef char*(__fastcall* getname_fn)(uintptr_t);
+getname_fn o_getname;
+
 template<typename t>
 inline t vfunc(DWORD_PTR* pTable, int index)
 {
 	DWORD_PTR* VTableFunctionBase = *(DWORD_PTR**)pTable;
 	DWORD_PTR dwAddress = VTableFunctionBase[index];
-	return (t)(dwAddress);
+	return reinterpret_cast<t>(dwAddress);
 }
+
+
+#include "sdk/c_globalvars.h"
+#include "sdk/c_entity.h"
+#include "sdk/matrix.h"
+#include "sdk/c_input.h"
 
 //trace
 #define CONTENTS_EMPTY 0x0
