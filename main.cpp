@@ -31,11 +31,11 @@ inline bool w2s(c_vec source, c_vec &destination) {
 }
 
 inline int get_entcount() {
-	return *reinterpret_cast<int*>(dwbase + 0xC006788);
+	return *(int*)(dwbase + 0xC006788);
 }
 
 inline c_entity* get_player(uintptr_t idx) {
-	auto e = *reinterpret_cast<c_entity**>(dwbase + 0x1F96D88 + (idx << 5));
+	auto e = *(c_entity**)(dwbase + 0x1F96D88 + (idx << 5));
 	if (e) {
 		auto h = e->m_shandle();
 		if (h && *h) {
@@ -49,7 +49,7 @@ inline c_entity* get_player(uintptr_t idx) {
 
 inline c_entity* get_localentity()
 {
-	uintptr_t local_entity_id = *reinterpret_cast<uintptr_t*>(dwbase + 0x1747EFC);
+	uintptr_t local_entity_id = *(uintptr_t*)(dwbase + 0x1747EFC);
 	for (int i = 0; i < get_entcount(); i++)
 	{
 		c_entity* ent = get_player(i);
@@ -106,7 +106,7 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 	std::call_once(present, [&] {
 		std::cout << xorstr_("hooked directx 11 present") << std::endl;
 
-		p_swapchain->GetDevice(__uuidof(g_pdevice), reinterpret_cast<void**>(&g_pdevice));
+		p_swapchain->GetDevice(__uuidof(g_pdevice), (void**)(&g_pdevice));
 		g_pdevice->GetImmediateContext(&g_pcontext);
 		ID3D11Texture2D *pBackBuffer;
 		p_swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBackBuffer);
@@ -115,7 +115,7 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 		g_pdevice->CreateRenderTargetView(pBackBuffer, NULL, &g_prendertargetview);
 
 		//shit way of doing it
-		o_wndproc = reinterpret_cast<WNDPROC>(SetWindowLongPtrA(iat(FindWindowA).get()(0, xorstr_("Apex Legends")), GWLP_WNDPROC, reinterpret_cast<uintptr_t>(hk_wndproc)));
+		o_wndproc = (WNDPROC)(SetWindowLongPtrA(iat(FindWindowA).get()(0, xorstr_("Apex Legends")), GWLP_WNDPROC, reinterpret_cast<uintptr_t>(hk_wndproc)));
 
 		ImGui_ImplDX11_Init(iat(FindWindowA).get()(0, xorstr_("Apex Legends")), g_pdevice, g_pcontext);
 		ImGui_ImplDX11_CreateDeviceObjects();
@@ -168,9 +168,9 @@ long __stdcall hk_present(IDXGISwapChain* p_swapchain, unsigned int syncintreval
 
 	if (b_miscenable) {
 		if (o_getasynckeystate(i_speedhack) && b_speedhack)
-			*reinterpret_cast<float*>(dwbase + 0x18DAB10) = 5.f;
+			*(float*)(dwbase + 0x18DAB10) = 5.f;
 		else
-			*reinterpret_cast<float*>(dwbase + 0x18DAB10) = 1.f;
+			*(float*)(dwbase + 0x18DAB10) = 1.f;
 	}
 	
 	ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -231,8 +231,8 @@ void __stdcall _thread() {
 	std::cout << xorstr_("use at own risk") << std::endl;
 
 	while (!dwbase || !dwdiscord) {
-		dwbase = reinterpret_cast<uintptr_t>(iat(GetModuleHandleA).get()(xorstr_("r5apex.exe")));
-		dwdiscord = reinterpret_cast<uintptr_t>(iat(GetModuleHandleA).get()(xorstr_("DiscordHook64.dll")));
+		dwbase = (uintptr_t)(iat(GetModuleHandleA).get()(xorstr_("r5apex.exe")));
+		dwdiscord = (uintptr_t)(iat(GetModuleHandleA).get()(xorstr_("DiscordHook64.dll")));
 	}
 
 	std::cout << xorstr_("r5apex.exe ") << std::hex << dwbase << std::endl;
@@ -240,10 +240,10 @@ void __stdcall _thread() {
 	
 	std::cout << xorstr_("loading discord hook methods") << std::endl;
 	uintptr_t dwpresent = memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 8B F2 48 8B D9 48 8B D1"));
-	o_getasynckeystate = reinterpret_cast<getasynckeystate_fn>(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("40 53 48 83 EC 20 8B D9 FF 15 ? ? ? ?")));
-	CreateHook = reinterpret_cast<createhook_fn>(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("40 53 55 56 57 41 54 41 56 41 57 48 83 EC 60")));
-	EnableHook = reinterpret_cast<enablehook_fn>(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 20 33 F6 8B FA")));
-	EnableHookQue = reinterpret_cast<applyqueued_fn>(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 57")));
+	o_getasynckeystate = (getasynckeystate_fn)(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("40 53 48 83 EC 20 8B D9 FF 15 ? ? ? ?")));
+	CreateHook = (createhook_fn)(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("40 53 55 56 57 41 54 41 56 41 57 48 83 EC 60")));
+	EnableHook = (enablehook_fn)(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 20 33 F6 8B FA")));
+	EnableHookQue = (applyqueued_fn)(memory::occurence(xorstr_("DiscordHook64.dll"), xorstr_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 57")));
 
 	std::cout << xorstr_("directx 11 present ") << std::hex << dwpresent << std::endl;
 	std::cout << xorstr_("getaynckeystate ") << std::hex << o_getasynckeystate << std::endl;
@@ -253,11 +253,11 @@ void __stdcall _thread() {
 	
 	std::cout << xorstr_("loading game classes") << std::endl;
 	
-	g_pinput = reinterpret_cast<c_input*>(memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 8D 0D ? ? ? ? 41 FF 90 ? ? ? ? EB E9")), 3));
-	g_pglobals = reinterpret_cast<c_globalvars*>(memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 8B 05 ? ? ? ? F3 0F 10 50 ? 74 38")), 4));
-	createinterface = reinterpret_cast<createinterface_fn>(memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("E8 ? ? ? ? 48 89 05 ? ? ? ? 48 83 3D ? ? ? ? ? 0F 84 ? ? ? ? 33 D2")), 1));
-	o_getname = reinterpret_cast<getname_fn>(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 83 3D 78 05 AC 0B 00 74 08 8B 51 30 E9 7E F0")));
-	o_worldtoscreen = reinterpret_cast<worldtoscreen_fn>(memory::occurence(xorstr_("r5apex.exe"), xorstr_("4C 8B DC 53 56 57 48 83 EC 70 8B 41 08 4D 8D 4B 18 F2 0F 10 01 4D 8D 43 BC 89 44 24 58 48 8B DA 49 8D 43 B8")));
+	g_pinput = (c_input*)(memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 8D 0D ? ? ? ? 41 FF 90 ? ? ? ? EB E9")), 3));
+	g_pglobals = (c_globalvars*)(memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 8B 05 ? ? ? ? F3 0F 10 50 ? 74 38")), 4));
+	createinterface = (createinterface_fn)(memory::dereference(memory::occurence(xorstr_("r5apex.exe"), xorstr_("E8 ? ? ? ? 48 89 05 ? ? ? ? 48 83 3D ? ? ? ? ? 0F 84 ? ? ? ? 33 D2")), 1));
+	o_getname = (getname_fn)(memory::occurence(xorstr_("r5apex.exe"), xorstr_("48 83 3D 78 05 AC 0B 00 74 08 8B 51 30 E9 7E F0")));
+	o_worldtoscreen = (worldtoscreen_fn)(memory::occurence(xorstr_("r5apex.exe"), xorstr_("4C 8B DC 53 56 57 48 83 EC 70 8B 41 08 4D 8D 4B 18 F2 0F 10 01 4D 8D 43 BC 89 44 24 58 48 8B DA 49 8D 43 B8")));
 	
 
 	std::cout << xorstr_("g_pinput ") << std::hex << g_pinput << std::endl;
@@ -268,8 +268,8 @@ void __stdcall _thread() {
 
 	std::cout << xorstr_("enable hooks") << std::endl;
 
-	CreateHook(reinterpret_cast<void*>(dwpresent), reinterpret_cast<void*>(hk_present), reinterpret_cast<void**>(&o_present));
-	EnableHook(reinterpret_cast<void*>(dwpresent), 1);
+	CreateHook((void*)dwpresent, (void*)hk_present, (void**)&o_present);
+	EnableHook((void*)dwpresent, 1);
 	EnableHookQue();
 }
 

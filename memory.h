@@ -13,7 +13,7 @@ namespace memory {
 		iat(K32GetModuleInformation).get()(iat(GetCurrentProcess).get()(), iat(GetModuleHandleA).get()(module), &mod, sizeof(MODULEINFO));
 		uintptr_t start = (uintptr_t)mod.lpBaseOfDll;
 		uintptr_t end = (uintptr_t)mod.lpBaseOfDll + (uintptr_t)mod.SizeOfImage;
-		uintptr_t match = 0;
+		uintptr_t match = (uintptr_t)nullptr;
 		const char* current = pattern;
 
 		for (uintptr_t pCur = start; pCur < end; pCur++) {
@@ -37,19 +37,18 @@ namespace memory {
 				match = 0;
 			}
 		}
-		return 0;
+		return (uintptr_t)nullptr;
 	}
 
 	inline uintptr_t dereference(uintptr_t address, unsigned int offset)
 	{
 		if (address == 0)
-			return 0;
+			return (uintptr_t)nullptr;
 
 		if (sizeof(uintptr_t) == 8)
 			return address + (int)((*(int*)(address + offset) + offset) + sizeof(int));
 
-		return (uintptr_t)*(unsigned long*)(address + offset);
-
+		return *(uintptr_t*)(address + offset);
 	}
 
 }
