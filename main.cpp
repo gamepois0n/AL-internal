@@ -84,7 +84,7 @@ inline void render_text(const ImVec2& from, const char* text, const ImVec4& colo
 	window->DrawList->AddText(from, ImGui::GetColorU32(color), text);
 }
 
-LRESULT APIENTRY hk_wndproc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+__int64 __stdcall hk_wndproc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	std::call_once(wndproc, [&] {std::cout << xorstr_("hooked wndproc") << std::endl; });
 
