@@ -19,18 +19,22 @@ class c_entity
 {
 public:
 	inline int m_ihealth() {
-		return *(int*)((uintptr_t)this + 0x3D4);
+		return *(int*)((uintptr_t)this + 0x3E0);
 	}
 	inline int m_imaxhealth() {
-		return *(int*)((uintptr_t)this + 0x4FC);
+		return *(int*)((uintptr_t)this + 0x500);
 	}
 	
 	inline int m_ishield() {
 		return *(int*)((uintptr_t)this + 0x150);
 	}
 
+	inline int m_imax_shield() {
+		return *(int*)((uintptr_t)this + 0x154);
+	}
+
 	inline int m_ilifestate() {
-		return *(int*)((uintptr_t)this + 0x718);
+		return *(int*)((uintptr_t)this + 0x720);
 	}
 
 	inline int m_iindex() {
@@ -38,7 +42,7 @@ public:
 	}
 
 	inline int m_iteam() {
-		return *(int*)((uintptr_t)this + 0x3E4);
+		return *(int*)((uintptr_t)this + 0x3F0);
 	}
 
 	inline void hl_make_glow() {
@@ -57,7 +61,18 @@ public:
 	}
 
 	inline char* m_shandle() {
-		return *(char**)((uintptr_t)this + 0x500);;
+		return *(char**)((uintptr_t)this + 0x508);;
+	}
+
+	inline c_vec m_vlocal_cam() {
+		return *(c_vec*)((uintptr_t)this + 0x1b44);
+	}
+	inline c_vec m_vlocal_angels() {
+
+		return *(c_vec*)((uintptr_t)this + 0x2138);
+	}
+	inline c_vec m_vhead_pos() {
+		return *(c_vec*)((uintptr_t)this + 0x4264);
 	}
 
 	inline c_vec m_vorigin() {

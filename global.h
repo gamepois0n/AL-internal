@@ -20,8 +20,8 @@
 #include "gui/imgui_internal.h"
 #include "gui/imgui_impl_dx11.h"
 
-uintptr_t dwbase = 0;
-uintptr_t dwdiscord = 0;
+uintptr_t apex_base = 0;
+uintptr_t discord_base = 0;
 extern float c_glow[4];
 extern float c_box[4];
 extern float c_name[4];
@@ -32,22 +32,19 @@ extern float c_name[4];
 #include "sdk/vector3d.h"
 
 typedef int(__stdcall* createhook_fn)(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal);
-createhook_fn CreateHook = nullptr;
+createhook_fn createhk = nullptr;
 
-typedef int(__stdcall* enablehook_fn)(LPVOID pTarget,BOOL enable);
-enablehook_fn EnableHook = nullptr;
+typedef int(__stdcall* enablehook_fn)(LPVOID pTarget, BOOL enable);
+enablehook_fn enablehk = nullptr;
 
-typedef int (__stdcall* applyqueued_fn)(VOID);
-applyqueued_fn EnableHookQue = nullptr;
+typedef int(__stdcall* applyqueued_fn)(VOID);
+applyqueued_fn enablequehk = nullptr;
 
-typedef long(__stdcall *present_fn) (IDXGISwapChain* p_swapchain, UINT syncintreval, UINT flags);
+typedef long(__stdcall *present_fn) (void* p_swapchain, UINT syncintreval, UINT flags);
 present_fn o_present = nullptr;
 
-typedef bool(__fastcall* createmove_fn)(void* cinput, int sequence_number, float input_sample_frametime, bool active);
-createmove_fn o_createmove = nullptr;
-
-typedef uintptr_t(__fastcall* createinterface_fn)(const char *, uintptr_t);
-createinterface_fn createinterface;
+using query_fn = decltype(&QueryPerformanceCounter);
+query_fn o_query;
 
 typedef SHORT(__stdcall* getasynckeystate_fn)(int vKey);
 getasynckeystate_fn o_getasynckeystate;
