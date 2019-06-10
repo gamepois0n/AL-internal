@@ -60,7 +60,7 @@ void** find_func(const char* function, HMODULE module = 0) {
 	return 0;
 }
 
-inline bool w2s(c_vec source, c_vec &destination) {
+bool w2s(c_vec source, c_vec &destination) {
 
 	auto get_view_matrix = []() {
 		uintptr_t viewRender = *(uintptr_t*)(apex_base + 0xC5EFA10);
