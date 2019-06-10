@@ -3,7 +3,7 @@
 
 
 namespace memory {
-	inline uintptr_t occurence(const char* module, const char* pattern) {
+	uintptr_t occurence(const char* module, const char* pattern) {
 
 		#define in_range(x, a, b) (x >= a && x <= b)
 		#define get_bits(x) (in_range((x & (~0x20)), 'A', 'F') ? ((x & (~0x20)) - 'A' + 0xA): (in_range(x, '0', '9') ? x - '0': 0))
